@@ -168,7 +168,7 @@
       top: 77px;
       z-index: 2;
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 4px;
       padding: 6px;
       margin-bottom: 12px;
@@ -346,6 +346,19 @@
       resize: vertical;
     }
 
+    .feedback-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .small-note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      margin: 0;
+    }
+
     .grid-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -436,6 +449,7 @@
         <button class="tab active" data-tab="now">ตอนนี้</button>
         <button class="tab" data-tab="beds">เตียง</button>
         <button class="tab" data-tab="history">บันทึก</button>
+        <button class="tab" data-tab="feedback">Feedback</button>
       </nav>
 
       <section id="viewNow">
@@ -508,6 +522,44 @@
         </div>
         <div class="list" id="historyList"></div>
       </section>
+
+      <section id="viewFeedback" class="hidden">
+        <div class="section-title">
+          <h2>ส่ง Feedback</h2>
+          <span>ช่วยบอกสิ่งที่ควรปรับ</span>
+        </div>
+        <form class="form" id="feedbackForm">
+          <label>
+            ประเภท
+            <select id="feedbackType">
+              <option>ใช้งานยาก/กดหลายขั้นตอน</option>
+              <option>ข้อมูลที่อยากเห็นเพิ่ม</option>
+              <option>แจ้งเตือน/เวลา</option>
+              <option>ปัญหาบนมือถือ</option>
+              <option>ข้อเสนอแนะอื่น ๆ</option>
+            </select>
+          </label>
+          <label>
+            Feedback
+            <textarea id="feedbackText" required placeholder="เล่าว่าติดตรงไหน อยากให้ปรับอะไร หรือสถานการณ์จริงที่เจอ"></textarea>
+          </label>
+          <div class="grid-2">
+            <label>
+              อุปกรณ์ที่ใช้
+              <input id="feedbackDevice" placeholder="เช่น iPhone, Android, คอมวอร์ด" autocomplete="off">
+            </label>
+            <label>
+              ติดต่อกลับ
+              <input id="feedbackContact" placeholder="ไม่บังคับ" autocomplete="off">
+            </label>
+          </div>
+          <p class="small-note">กรุณาไม่ใส่ชื่อคนไข้ เลข HN หรือข้อมูลส่วนตัวของคนไข้ใน feedback</p>
+          <div class="feedback-actions">
+            <button class="btn" type="submit">ส่งเข้า GitHub</button>
+            <button class="btn secondary" type="button" id="copyFeedback">คัดลอกข้อความ</button>
+          </div>
+        </form>
+      </section>
     </main>
 
     <div class="footer-nav">
@@ -545,6 +597,12 @@
       doseInput: document.getElementById("doseInput"),
       routeInput: document.getElementById("routeInput"),
       noteInput: document.getElementById("noteInput"),
+      feedbackForm: document.getElementById("feedbackForm"),
+      feedbackType: document.getElementById("feedbackType"),
+      feedbackText: document.getElementById("feedbackText"),
+      feedbackDevice: document.getElementById("feedbackDevice"),
+      feedbackContact: document.getElementById("feedbackContact"),
+      copyFeedback: document.getElementById("copyFeedback"),
       quickSample: document.getElementById("quickSample"),
       clearDone: document.getElementById("clearDone"),
       notifyBtn: document.getElementById("notifyBtn"),
@@ -779,11 +837,52 @@
       tab.addEventListener("click", () => {
         document.querySelectorAll(".tab").forEach(item => item.classList.remove("active"));
         tab.classList.add("active");
-        document.getElementById("viewNow").classList.toggle("hidden", tab.dataset.tab !== "now");
-        document.getElementById("viewBeds").classList.toggle("hidden", tab.dataset.tab !== "beds");
-        document.getElementById("viewHistory").classList.toggle("hidden", tab.dataset.tab !== "history");
-      });
+      document.getElementById("viewNow").classList.toggle("hidden", tab.dataset.tab !== "now");
+      document.getElementById("viewBeds").classList.toggle("hidden", tab.dataset.tab !== "beds");
+      document.getElementById("viewHistory").classList.toggle("hidden", tab.dataset.tab !== "history");
+      document.getElementById("viewFeedback").classList.toggle("hidden", tab.dataset.tab !== "feedback");
     });
+  });
+
+    function buildFeedbackBody() {
+      const device = els.feedbackDevice.value.trim() || "ไม่ได้ระบุ";
+      const contact = els.feedbackContact.value.trim() || "ไม่ได้ระบุ";
+      return [
+        `ประเภท: ${els.feedbackType.value}`,
+        "",
+        "รายละเอียด:",
+        els.feedbackText.value.trim(),
+        "",
+        `อุปกรณ์ที่ใช้: ${device}`,
+        `ติดต่อกลับ: ${contact}`,
+        "",
+        "หมายเหตุ: ผู้ส่งควรหลีกเลี่ยงข้อมูลส่วนตัวของคนไข้"
+      ].join("\n");
+    }
+
+    function openFeedbackIssue() {
+      const title = encodeURIComponent(`[Feedback] ${els.feedbackType.value}`);
+      const body = encodeURIComponent(buildFeedbackBody());
+      window.open(`https://github.com/chrismoho5572/nurse-med-reminder-mvp/issues/new?title=${title}&body=${body}`, "_blank", "noopener");
+    }
+
+    async function copyFeedbackText() {
+      const body = buildFeedbackBody();
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(body);
+      } else {
+        const temp = document.createElement("textarea");
+        temp.value = body;
+        document.body.appendChild(temp);
+        temp.select();
+        document.execCommand("copy");
+        temp.remove();
+      }
+      els.copyFeedback.textContent = "คัดลอกแล้ว";
+      setTimeout(() => {
+        els.copyFeedback.textContent = "คัดลอกข้อความ";
+      }, 1800);
+    }
 
     els.medForm.addEventListener("submit", event => {
       event.preventDefault();
@@ -800,7 +899,13 @@
       els.bedInput.focus();
     });
 
+    els.feedbackForm.addEventListener("submit", event => {
+      event.preventDefault();
+      openFeedbackIssue();
+    });
+
     els.quickSample.addEventListener("click", fillSampleData);
+    els.copyFeedback.addEventListener("click", copyFeedbackText);
     els.clearDone.addEventListener("click", () => {
       showDone = !showDone;
       els.clearDone.textContent = showDone ? "ซ่อนที่เสร็จแล้ว" : "แสดงทั้งหมด";
