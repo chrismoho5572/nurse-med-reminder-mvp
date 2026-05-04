@@ -1,0 +1,824 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nurse Med Reminder MVP</title>
+  <style>
+    :root {
+      --bg: #f7f8fb;
+      --panel: #ffffff;
+      --ink: #17202a;
+      --muted: #607080;
+      --line: #dbe2ea;
+      --blue: #2563eb;
+      --green: #12805c;
+      --amber: #b7791f;
+      --red: #c53030;
+      --soft-blue: #eaf1ff;
+      --soft-green: #e9f7f1;
+      --soft-amber: #fff5df;
+      --soft-red: #fff0f0;
+      --shadow: 0 8px 24px rgba(28, 39, 55, .08);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--bg);
+    }
+
+    button, input, textarea, select {
+      font: inherit;
+    }
+
+    .app {
+      max-width: 520px;
+      min-height: 100vh;
+      margin: 0 auto;
+      background: var(--bg);
+      padding-bottom: 86px;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      background: rgba(247, 248, 251, .94);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+      padding: 16px 16px 12px;
+    }
+
+    .topline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 22px;
+      line-height: 1.2;
+    }
+
+    .subtitle {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .clock {
+      min-width: 88px;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      text-align: center;
+      font-weight: 700;
+      color: var(--blue);
+    }
+
+    main {
+      padding: 14px 14px 0;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .metric {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      min-height: 72px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .metric span {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.25;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 8px;
+      padding: 12px 14px;
+      min-height: 46px;
+      font-weight: 700;
+      color: #fff;
+      background: var(--blue);
+      cursor: pointer;
+    }
+
+    .btn.secondary {
+      color: var(--ink);
+      background: var(--panel);
+      border: 1px solid var(--line);
+    }
+
+    .btn.done {
+      background: var(--green);
+    }
+
+    .btn.warn {
+      color: var(--red);
+      background: var(--soft-red);
+      border: 1px solid #ffd2d2;
+    }
+
+    .notice {
+      margin-bottom: 12px;
+      padding: 11px 12px;
+      border: 1px solid #f2d17d;
+      border-radius: 8px;
+      background: #fff8e6;
+      color: #6f4e13;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .tabs {
+      position: sticky;
+      top: 77px;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+      padding: 6px;
+      margin-bottom: 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #edf1f6;
+    }
+
+    .tab {
+      border: 0;
+      border-radius: 7px;
+      padding: 9px 6px;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .tab.active {
+      color: var(--blue);
+      background: var(--panel);
+      box-shadow: 0 1px 4px rgba(28, 39, 55, .08);
+    }
+
+    .section-title {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 14px 2px 8px;
+    }
+
+    .section-title h2 {
+      margin: 0;
+      font-size: 17px;
+    }
+
+    .section-title span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .list {
+      display: grid;
+      gap: 9px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-left: 6px solid var(--blue);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 12px;
+    }
+
+    .card.due {
+      border-left-color: var(--amber);
+      background: var(--soft-amber);
+    }
+
+    .card.late {
+      border-left-color: var(--red);
+      background: var(--soft-red);
+    }
+
+    .card.done-card {
+      border-left-color: var(--green);
+      background: var(--soft-green);
+    }
+
+    .card-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .bed {
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .time {
+      min-width: 58px;
+      text-align: right;
+      font-weight: 800;
+      color: var(--blue);
+    }
+
+    .late .time {
+      color: var(--red);
+    }
+
+    .due .time {
+      color: var(--amber);
+    }
+
+    .drug {
+      margin-top: 6px;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .meta {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .icon-btn {
+      width: 46px;
+      min-height: 46px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--red);
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .empty {
+      padding: 28px 16px;
+      border: 1px dashed #b8c4d2;
+      border-radius: 8px;
+      color: var(--muted);
+      text-align: center;
+      background: rgba(255, 255, 255, .62);
+    }
+
+    .form {
+      display: grid;
+      gap: 10px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 12px;
+    }
+
+    label {
+      display: grid;
+      gap: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid #cfd8e3;
+      border-radius: 8px;
+      padding: 12px;
+      background: #fff;
+      color: var(--ink);
+      outline: none;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+    }
+
+    textarea {
+      min-height: 78px;
+      resize: vertical;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .footer-nav {
+      position: fixed;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 4;
+      max-width: 520px;
+      margin: 0 auto;
+      border-top: 1px solid var(--line);
+      background: rgba(255, 255, 255, .96);
+      backdrop-filter: blur(12px);
+      padding: 8px 10px 10px;
+    }
+
+    .footer-nav .toolbar {
+      margin: 0;
+    }
+
+    .privacy-note {
+      margin: 14px 2px 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 360px) {
+      h1 {
+        font-size: 20px;
+      }
+
+      .summary {
+        grid-template-columns: 1fr;
+      }
+
+      .grid-2, .toolbar, .actions {
+        grid-template-columns: 1fr;
+      }
+
+      .icon-btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="topline">
+        <div>
+          <h1>แจ้งเตือนให้ยา</h1>
+          <p class="subtitle">ต้นแบบสำหรับใช้เตือนตัวเองในเวร</p>
+        </div>
+        <div class="clock" id="clock">--:--</div>
+      </div>
+    </header>
+
+    <main>
+      <section class="notice">
+        ต้นแบบนี้เป็นตัวช่วยเตือนส่วนตัวสำหรับทดลองเท่านั้น ไม่ใช่ระบบสั่งยา เวชระเบียน หรือเครื่องมือทดแทนขั้นตอนตรวจสอบยาของโรงพยาบาล กรุณาใช้ข้อมูลสมมติหรือเลขเตียงเท่านั้น
+      </section>
+
+      <section class="summary" aria-label="สรุปงาน">
+        <div class="metric">
+          <strong id="lateCount">0</strong>
+          <span>เลยเวลา</span>
+        </div>
+        <div class="metric">
+          <strong id="dueCount">0</strong>
+          <span>ใกล้ถึงเวลา</span>
+        </div>
+        <div class="metric">
+          <strong id="todoCount">0</strong>
+          <span>ยังไม่เสร็จ</span>
+        </div>
+      </section>
+
+      <nav class="tabs" aria-label="มุมมอง">
+        <button class="tab active" data-tab="now">ตอนนี้</button>
+        <button class="tab" data-tab="beds">เตียง</button>
+        <button class="tab" data-tab="history">บันทึก</button>
+      </nav>
+
+      <section id="viewNow">
+        <div class="toolbar">
+          <button class="btn" id="quickSample">เติมข้อมูลตัวอย่าง</button>
+          <button class="btn secondary" id="clearDone">ซ่อนที่เสร็จแล้ว</button>
+        </div>
+        <div class="section-title">
+          <h2>รายการที่ต้องดูแล</h2>
+          <span>เรียงจากเวลาที่ใกล้ที่สุด</span>
+        </div>
+        <div class="list" id="taskList"></div>
+      </section>
+
+      <section id="viewBeds" class="hidden">
+        <div class="section-title">
+          <h2>เพิ่มรายการยา</h2>
+          <span>ใช้เลขเตียงแทนชื่อคนไข้</span>
+        </div>
+        <form class="form" id="medForm">
+          <div class="grid-2">
+            <label>
+              เตียง
+              <input id="bedInput" required placeholder="เช่น 12A" autocomplete="off">
+            </label>
+            <label>
+              เวลา
+              <input id="timeInput" required type="time">
+            </label>
+          </div>
+          <label>
+            ชื่อยา
+            <input id="drugInput" required placeholder="เช่น Ceftriaxone" autocomplete="off">
+          </label>
+          <div class="grid-2">
+            <label>
+              ขนาด/จำนวน
+              <input id="doseInput" placeholder="เช่น 1 g" autocomplete="off">
+            </label>
+            <label>
+              วิธีให้
+              <select id="routeInput">
+                <option>รับประทาน</option>
+                <option>ฉีด</option>
+                <option>IV</option>
+                <option>หยอด/พ่น</option>
+                <option>อื่น ๆ</option>
+              </select>
+            </label>
+          </div>
+          <label>
+            หมายเหตุ
+            <textarea id="noteInput" placeholder="เช่น หลังอาหาร, ตรวจ BP ก่อนให้ยา"></textarea>
+          </label>
+          <button class="btn" type="submit">เพิ่มเข้ารายการ</button>
+        </form>
+
+        <div class="section-title">
+          <h2>เตียงทั้งหมด</h2>
+          <span id="bedCount">0 เตียง</span>
+        </div>
+        <div class="list" id="bedList"></div>
+        <p class="privacy-note">ช่วงต้นแบบควรใช้เลขเตียงและข้อมูลสมมติ หลีกเลี่ยงชื่อ นามสกุล เลข HN หรือข้อมูลที่ระบุตัวคนไข้ได้</p>
+      </section>
+
+      <section id="viewHistory" class="hidden">
+        <div class="section-title">
+          <h2>บันทึกที่ให้ยาแล้ว</h2>
+          <span>ใช้ดูย้อนหลังระหว่างเวร</span>
+        </div>
+        <div class="list" id="historyList"></div>
+      </section>
+    </main>
+
+    <div class="footer-nav">
+      <div class="toolbar">
+        <button class="btn secondary" id="notifyBtn">เปิดเสียงเตือน</button>
+        <button class="btn warn" id="resetBtn">ล้างข้อมูล</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const storageKey = "nurse-med-reminder-v1";
+    const alertWindowMinutes = 15;
+    let showDone = true;
+    let soundEnabled = false;
+    let lastAlertKey = "";
+
+    const state = {
+      meds: loadMeds()
+    };
+
+    const els = {
+      clock: document.getElementById("clock"),
+      lateCount: document.getElementById("lateCount"),
+      dueCount: document.getElementById("dueCount"),
+      todoCount: document.getElementById("todoCount"),
+      taskList: document.getElementById("taskList"),
+      bedList: document.getElementById("bedList"),
+      historyList: document.getElementById("historyList"),
+      bedCount: document.getElementById("bedCount"),
+      medForm: document.getElementById("medForm"),
+      bedInput: document.getElementById("bedInput"),
+      timeInput: document.getElementById("timeInput"),
+      drugInput: document.getElementById("drugInput"),
+      doseInput: document.getElementById("doseInput"),
+      routeInput: document.getElementById("routeInput"),
+      noteInput: document.getElementById("noteInput"),
+      quickSample: document.getElementById("quickSample"),
+      clearDone: document.getElementById("clearDone"),
+      notifyBtn: document.getElementById("notifyBtn"),
+      resetBtn: document.getElementById("resetBtn")
+    };
+
+    function loadMeds() {
+      try {
+        return JSON.parse(localStorage.getItem(storageKey)) || [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveMeds() {
+      localStorage.setItem(storageKey, JSON.stringify(state.meds));
+    }
+
+    function uid() {
+      return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
+    function minutesFromTime(time) {
+      const [hour, minute] = time.split(":").map(Number);
+      return hour * 60 + minute;
+    }
+
+    function nowMinutes() {
+      const now = new Date();
+      return now.getHours() * 60 + now.getMinutes();
+    }
+
+    function getStatus(med) {
+      if (med.doneAt) return "done";
+      const diff = minutesFromTime(med.time) - nowMinutes();
+      if (diff < 0) return "late";
+      if (diff <= alertWindowMinutes) return "due";
+      return "upcoming";
+    }
+
+    function statusText(status) {
+      if (status === "late") return "เลยเวลา";
+      if (status === "due") return "ใกล้ถึงเวลา";
+      if (status === "done") return "ให้ยาแล้ว";
+      return "รอเวลา";
+    }
+
+    function sortedMeds() {
+      return [...state.meds].sort((a, b) => {
+        if (!!a.doneAt !== !!b.doneAt) return a.doneAt ? 1 : -1;
+        return minutesFromTime(a.time) - minutesFromTime(b.time);
+      });
+    }
+
+    function render() {
+      renderClock();
+      renderSummary();
+      renderTasks();
+      renderBeds();
+      renderHistory();
+      checkDueAlert();
+    }
+
+    function renderClock() {
+      const now = new Date();
+      els.clock.textContent = now.toLocaleTimeString("th-TH", {
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    }
+
+    function renderSummary() {
+      const statuses = state.meds.map(getStatus);
+      els.lateCount.textContent = statuses.filter(status => status === "late").length;
+      els.dueCount.textContent = statuses.filter(status => status === "due").length;
+      els.todoCount.textContent = state.meds.filter(med => !med.doneAt).length;
+    }
+
+    function renderTasks() {
+      const meds = sortedMeds().filter(med => showDone || !med.doneAt);
+      if (!meds.length) {
+        els.taskList.innerHTML = `<div class="empty">ยังไม่มีรายการยา เพิ่มรายการแรกจากแท็บเตียง หรือกดเติมข้อมูลตัวอย่าง</div>`;
+        return;
+      }
+      els.taskList.innerHTML = meds.map(renderMedCard).join("");
+    }
+
+    function renderMedCard(med) {
+      const status = getStatus(med);
+      const details = [med.dose, med.route].filter(Boolean).join(" · ");
+      return `
+        <article class="card ${status === "late" ? "late" : ""} ${status === "due" ? "due" : ""} ${status === "done" ? "done-card" : ""}">
+          <div class="card-head">
+            <div>
+              <div class="bed">เตียง ${escapeHtml(med.bed)}</div>
+              <div class="meta">${statusText(status)}</div>
+            </div>
+            <div class="time">${escapeHtml(med.time)}</div>
+          </div>
+          <div class="drug">${escapeHtml(med.drug)}</div>
+          ${details ? `<div class="meta">${escapeHtml(details)}</div>` : ""}
+          ${med.note ? `<div class="meta">${escapeHtml(med.note)}</div>` : ""}
+          ${med.doneAt ? `<div class="meta">บันทึกเวลา ${escapeHtml(med.doneAt)}</div>` : ""}
+          <div class="actions">
+            <button class="btn done" onclick="markDone('${med.id}')" ${med.doneAt ? "disabled" : ""}>ให้ยาแล้ว</button>
+            <button class="icon-btn" onclick="removeMed('${med.id}')" aria-label="ลบรายการ">×</button>
+          </div>
+        </article>
+      `;
+    }
+
+    function renderBeds() {
+      const beds = new Map();
+      sortedMeds().forEach(med => {
+        const entry = beds.get(med.bed) || { total: 0, todo: 0, late: 0 };
+        entry.total += 1;
+        if (!med.doneAt) entry.todo += 1;
+        if (getStatus(med) === "late") entry.late += 1;
+        beds.set(med.bed, entry);
+      });
+
+      els.bedCount.textContent = `${beds.size} เตียง`;
+      if (!beds.size) {
+        els.bedList.innerHTML = `<div class="empty">ยังไม่มีเตียงในรายการ</div>`;
+        return;
+      }
+
+      els.bedList.innerHTML = [...beds.entries()].map(([bed, entry]) => `
+        <article class="card ${entry.late ? "late" : ""}">
+          <div class="card-head">
+            <div class="bed">เตียง ${escapeHtml(bed)}</div>
+            <div class="time">${entry.todo}/${entry.total}</div>
+          </div>
+          <div class="meta">${entry.late ? `${entry.late} รายการเลยเวลา` : "ไม่มีรายการเลยเวลา"}</div>
+        </article>
+      `).join("");
+    }
+
+    function renderHistory() {
+      const done = sortedMeds().filter(med => med.doneAt).reverse();
+      if (!done.length) {
+        els.historyList.innerHTML = `<div class="empty">ยังไม่มีบันทึกการให้ยา</div>`;
+        return;
+      }
+      els.historyList.innerHTML = done.map(renderMedCard).join("");
+    }
+
+    function markDone(id) {
+      const med = state.meds.find(item => item.id === id);
+      if (!med) return;
+      med.doneAt = new Date().toLocaleTimeString("th-TH", {
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+      saveMeds();
+      render();
+    }
+
+    function removeMed(id) {
+      state.meds = state.meds.filter(item => item.id !== id);
+      saveMeds();
+      render();
+    }
+
+    function addMed(med) {
+      state.meds.push({ id: uid(), doneAt: "", ...med });
+      saveMeds();
+      render();
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function fillSampleData() {
+      const now = nowMinutes();
+      const toTime = offset => {
+        const total = Math.max(0, Math.min(1439, now + offset));
+        const hour = String(Math.floor(total / 60)).padStart(2, "0");
+        const minute = String(total % 60).padStart(2, "0");
+        return `${hour}:${minute}`;
+      };
+      state.meds = [
+        { id: uid(), bed: "01", time: toTime(-10), drug: "Paracetamol", dose: "500 mg", route: "รับประทาน", note: "หลังอาหาร", doneAt: "" },
+        { id: uid(), bed: "04", time: toTime(8), drug: "Ceftriaxone", dose: "1 g", route: "IV", note: "ตรวจประวัติแพ้ยาก่อนให้", doneAt: "" },
+        { id: uid(), bed: "07", time: toTime(25), drug: "Omeprazole", dose: "40 mg", route: "IV", note: "ก่อนอาหาร", doneAt: "" },
+        { id: uid(), bed: "12A", time: toTime(50), drug: "Insulin", dose: "ตาม sliding scale", route: "ฉีด", note: "ตรวจ DTX ก่อน", doneAt: "" }
+      ];
+      saveMeds();
+      render();
+    }
+
+    function enableSound() {
+      soundEnabled = true;
+      els.notifyBtn.textContent = "เสียงเตือนพร้อมใช้";
+      beep();
+    }
+
+    function beep() {
+      if (!soundEnabled) return;
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      const ctx = new AudioContext();
+      const oscillator = ctx.createOscillator();
+      const gain = ctx.createGain();
+      oscillator.type = "sine";
+      oscillator.frequency.value = 740;
+      gain.gain.setValueAtTime(0.001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.14, ctx.currentTime + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.42);
+      oscillator.connect(gain);
+      gain.connect(ctx.destination);
+      oscillator.start();
+      oscillator.stop(ctx.currentTime + 0.45);
+    }
+
+    function checkDueAlert() {
+      const due = sortedMeds().filter(med => ["due", "late"].includes(getStatus(med)) && !med.doneAt);
+      const alertKey = due.map(med => med.id).join("|");
+      if (due.length && alertKey && alertKey !== lastAlertKey) {
+        lastAlertKey = alertKey;
+        beep();
+      }
+    }
+
+    document.querySelectorAll(".tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach(item => item.classList.remove("active"));
+        tab.classList.add("active");
+        document.getElementById("viewNow").classList.toggle("hidden", tab.dataset.tab !== "now");
+        document.getElementById("viewBeds").classList.toggle("hidden", tab.dataset.tab !== "beds");
+        document.getElementById("viewHistory").classList.toggle("hidden", tab.dataset.tab !== "history");
+      });
+    });
+
+    els.medForm.addEventListener("submit", event => {
+      event.preventDefault();
+      addMed({
+        bed: els.bedInput.value.trim(),
+        time: els.timeInput.value,
+        drug: els.drugInput.value.trim(),
+        dose: els.doseInput.value.trim(),
+        route: els.routeInput.value,
+        note: els.noteInput.value.trim()
+      });
+      els.medForm.reset();
+      els.routeInput.value = "รับประทาน";
+      els.bedInput.focus();
+    });
+
+    els.quickSample.addEventListener("click", fillSampleData);
+    els.clearDone.addEventListener("click", () => {
+      showDone = !showDone;
+      els.clearDone.textContent = showDone ? "ซ่อนที่เสร็จแล้ว" : "แสดงทั้งหมด";
+      render();
+    });
+    els.notifyBtn.addEventListener("click", enableSound);
+    els.resetBtn.addEventListener("click", () => {
+      if (!confirm("ล้างข้อมูลทั้งหมดในต้นแบบนี้?")) return;
+      state.meds = [];
+      saveMeds();
+      render();
+    });
+
+    window.markDone = markDone;
+    window.removeMed = removeMed;
+
+    render();
+    setInterval(render, 30000);
+  </script>
+</body>
+</html>
