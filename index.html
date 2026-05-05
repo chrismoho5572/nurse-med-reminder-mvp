@@ -4,6 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Nurse Med Reminder MVP</title>
+  <meta name="theme-color" content="#2563eb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Med Reminder">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon.svg">
   <style>
     :root {
       --bg: #f7f8fb;
@@ -359,6 +365,22 @@
       margin: 0;
     }
 
+    .install-note {
+      display: none;
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--soft-blue);
+      color: #23406f;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .install-note.show {
+      display: block;
+    }
+
     .grid-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -564,8 +586,11 @@
 
     <div class="footer-nav">
       <div class="toolbar">
-        <button class="btn secondary" id="notifyBtn">เปิดเสียงเตือน</button>
+        <button class="btn secondary" id="notifyBtn">เปิดแจ้งเตือน</button>
         <button class="btn warn" id="resetBtn">ล้างข้อมูล</button>
+      </div>
+      <div class="install-note" id="installNote">
+        iPhone: เปิดด้วย Safari แล้วกด Share > Add to Home Screen เพื่อใช้งานเหมือนแอพ Android: เลือก Install app เมื่อ browser แนะนำ
       </div>
     </div>
   </div>
@@ -575,6 +600,7 @@
     const alertWindowMinutes = 15;
     let showDone = true;
     let soundEnabled = false;
+    let notificationEnabled = false;
     let lastAlertKey = "";
 
     const state = {
@@ -606,6 +632,7 @@
       quickSample: document.getElementById("quickSample"),
       clearDone: document.getElementById("clearDone"),
       notifyBtn: document.getElementById("notifyBtn"),
+      installNote: document.getElementById("installNote"),
       resetBtn: document.getElementById("resetBtn")
     };
 
@@ -800,10 +827,18 @@
       render();
     }
 
-    function enableSound() {
+    async function enableSound() {
       soundEnabled = true;
-      els.notifyBtn.textContent = "เสียงเตือนพร้อมใช้";
+      notificationEnabled = await requestNotifications();
+      els.notifyBtn.textContent = notificationEnabled ? "แจ้งเตือนพร้อมใช้" : "เสียงเตือนพร้อมใช้";
+      updateInstallHint();
       beep();
+      if (notificationEnabled) {
+        showSystemNotification("แจ้งเตือนพร้อมใช้", {
+          body: "ระบบจะเตือนเมื่อมีรายการใกล้ถึงเวลาหรือเลยเวลา ขณะเว็บแอพยังทำงานอยู่",
+          tag: "notification-ready"
+        });
+      }
     }
 
     function beep() {
@@ -830,7 +865,55 @@
       if (due.length && alertKey && alertKey !== lastAlertKey) {
         lastAlertKey = alertKey;
         beep();
+        const first = due[0];
+        showSystemNotification(`${statusText(getStatus(first))}: เตียง ${first.bed}`, {
+          body: `${first.time} ${first.drug}${first.dose ? ` · ${first.dose}` : ""}`,
+          tag: `med-${first.id}`
+        });
       }
+    }
+
+    async function requestNotifications() {
+      if (!("Notification" in window)) return false;
+      if (Notification.permission === "granted") return true;
+      if (Notification.permission === "denied") return false;
+      const permission = await Notification.requestPermission();
+      return permission === "granted";
+    }
+
+    async function showSystemNotification(title, options = {}) {
+      if (!notificationEnabled || !("Notification" in window) || Notification.permission !== "granted") return;
+      const payload = {
+        icon: "icons/icon.svg",
+        badge: "icons/icon.svg",
+        ...options
+      };
+      if (navigator.serviceWorker?.ready) {
+        const registration = await navigator.serviceWorker.ready;
+        registration.showNotification(title, payload);
+        return;
+      }
+      new Notification(title, payload);
+    }
+
+    function updateInstallHint() {
+      const standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
+      els.installNote.classList.toggle("show", !standalone);
+    }
+
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("sw.js").catch(() => {});
+      });
+    }
+
+    function initPwaState() {
+      notificationEnabled = "Notification" in window && Notification.permission === "granted";
+      if (notificationEnabled) {
+        soundEnabled = true;
+        els.notifyBtn.textContent = "แจ้งเตือนพร้อมใช้";
+      }
+      updateInstallHint();
     }
 
     document.querySelectorAll(".tab").forEach(tab => {
@@ -922,6 +1005,7 @@
     window.markDone = markDone;
     window.removeMed = removeMed;
 
+    initPwaState();
     render();
     setInterval(render, 30000);
   </script>

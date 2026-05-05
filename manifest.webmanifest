@@ -1,0 +1,19 @@
+{
+  "name": "Nurse Medication Reminder MVP",
+  "short_name": "Med Reminder",
+  "description": "Prototype medication reminder for nurses during a shift.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f8fb",
+  "theme_color": "#2563eb",
+  "lang": "th",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
