@@ -1,4 +1,4 @@
-const CACHE_NAME = "nurse-med-reminder-v2";
+const CACHE_NAME = "nurse-med-reminder-v3";
 const APP_SHELL = [
   "./",
   "index.html",
